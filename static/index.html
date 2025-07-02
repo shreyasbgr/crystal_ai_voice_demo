@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Crystal Voice AI</title>
+    <!-- Devanagari Font support if required -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari&display=swap" rel="stylesheet">
+
+    <!-- Favicon for all platforms -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
+    <link rel="manifest" href="/static/icons/site.webmanifest">
+    <link rel="shortcut icon" href="/static/icons/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-title" content="Voice AI">
+    <meta name="application-name" content="Voice AI">
+
+    <style>
+        body {
+            font-family: 'Noto Sans Devanagari', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a; /* black-gray outer background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 550px;
+            text-align: center;
+        }
+
+        h2,
+        h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        button,
+        .file-label {
+            margin: 10px 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: inline-block;
+        }
+
+        button:hover:not(:disabled),
+        .file-label:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        .file-label {
+            background-color: #28a745;
+        }
+
+        .file-label:hover {
+            background-color: #218838;
+        }
+
+        audio {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        section {
+            margin-top: 25px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        #fileNameDisplay {
+            margin: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .mode-switch {
+            margin: 15px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        input[type="radio"] {
+            margin-right: 6px;
+        }
+
+        label {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>🎙️ Talk to the AI Assistant</h2>
+
+        <!-- Mode switch -->
+        <div class="mode-switch">
+            <label>
+                <input type="radio" name="mode" value="record" checked /> 🎤 Record Audio
+            </label>
+            &nbsp;&nbsp;
+            <label>
+                <input type="radio" name="mode" value="upload" /> 📂 Upload Audio
+            </label>
+        </div>
+
+        <!-- Recording buttons -->
+        <div id="recordSection">
+            <button id="recordBtn">Start Recording</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+
+        <!-- File upload buttons -->
+        <div id="uploadSection" class="hidden">
+            <label for="fileInput" class="file-label">Choose Audio File</label>
+            <input type="file" id="fileInput" accept="audio/*" />
+            <p id="fileNameDisplay"></p>
+        </div>
+
+        <!-- Send button -->
+        <button id="uploadBtn" disabled>Send to AI</button>
+
+        <!-- Preview section -->
+        <section>
+            <h3>🎧 Preview</h3>
+            <audio id="audioPreview" controls></audio>
+        </section>
+
+        <!-- Response section -->
+        <section>
+            <h3>🤖 AI Response</h3>
+            <audio id="audioReply" controls></audio>
+        </section>
+
+        <p id="status"></p>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob = null;
+
+        const recordBtn = document.getElementById("recordBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const uploadBtn = document.getElementById("uploadBtn");
+        const fileInput = document.getElementById("fileInput");
+        const fileNameDisplay = document.getElementById("fileNameDisplay");
+        const statusText = document.getElementById("status");
+        const audioPreview = document.getElementById("audioPreview");
+        const audioReply = document.getElementById("audioReply");
+        const recordSection = document.getElementById("recordSection");
+        const uploadSection = document.getElementById("uploadSection");
+
+        // Mode switch
+        document.querySelectorAll('input[name="mode"]').forEach((radio) => {
+            radio.addEventListener("change", (e) => {
+                const mode = e.target.value;
+                if (mode === "record") {
+                    recordSection.classList.remove("hidden");
+                    uploadSection.classList.add("hidden");
+                    fileInput.value = "";
+                    fileNameDisplay.textContent = "";
+                    audioPreview.src = "";
+                    audioBlob = null;
+                    uploadBtn.disabled = true;
+                } else {
+                    recordSection.classList.add("hidden");
+                    uploadSection.classList.remove("hidden");
+                    audioPreview.src = "";
+                    audioBlob = null;
+                    uploadBtn.disabled = true;
+                }
+            });
+        });
+
+        // 🎤 Recording
+        recordBtn.onclick = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (e) => {
+                audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioPreview.src = audioUrl;
+                fileInput.value = "";
+                fileNameDisplay.textContent = "";
+                uploadBtn.disabled = false;
+                statusText.textContent = "🎧 Preview your recording and send to AI when ready.";
+            };
+
+            mediaRecorder.start();
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
+            uploadBtn.disabled = true;
+            statusText.textContent = "🎙️ Recording...";
+        };
+
+        stopBtn.onclick = () => {
+            mediaRecorder.stop();
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusText.textContent = "⏹️ Recording stopped.";
+        };
+
+        // 📂 File upload
+        fileInput.onchange = () => {
+            const file = fileInput.files[0];
+            if (file) {
+                audioBlob = file;
+                const audioUrl = URL.createObjectURL(file);
+                audioPreview.src = audioUrl;
+                fileNameDisplay.textContent = `✅ Selected: ${file.name}`;
+                uploadBtn.disabled = false;
+                statusText.textContent = "📂 File loaded. Click 'Send to AI'.";
+            }
+        };
+
+        // ⬆️ Upload to backend
+        uploadBtn.onclick = async () => {
+            if (!audioBlob) return;
+            statusText.textContent = "⏳ Sending to AI...";
+            uploadBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append("file", audioBlob, audioBlob.name || "input.webm");
+
+            const response = await fetch("/upload-audio", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (response.ok) {
+                const audioFile = await response.blob();
+                const audioUrl = URL.createObjectURL(audioFile);
+                audioReply.src = audioUrl;
+                statusText.textContent = "✅ AI responded!";
+            } else {
+                statusText.textContent = "❌ Error processing audio.";
+            }
+        };
+    </script>
+</body>
+
+</html>
