@@ -1,4 +1,3 @@
-#Dummy change
 name: Deploy to Fly.io
 
 on:
