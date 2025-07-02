@@ -6,19 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Crystal Voice AI Demo</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari&display=swap" rel="stylesheet">
-    <!-- Favicon for all platforms -->
     <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
     <link rel="manifest" href="/static/icons/site.webmanifest">
     <link rel="shortcut icon" href="/static/icons/favicon.ico">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="apple-mobile-web-app-title" content="Voice AI">
-    <meta name="application-name" content="Voice AI">
+    <meta name="theme-color" content="#1E1E1E">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #1E1E1E;
+            color: #FFFFFF;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -27,17 +25,18 @@
         }
 
         .card {
-            background: white;
+            background-color: #252526;
             padding: 2rem;
             border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
             width: 90%;
             max-width: 600px;
             text-align: center;
         }
 
-        h2 {
-            margin-bottom: 1rem;
+        h2,
+        h3 {
+            color: #FFFFFF;
         }
 
         button {
@@ -47,27 +46,27 @@
             border-radius: 10px;
             border: none;
             cursor: pointer;
-            background-color: #007bff;
-            color: white;
+            background-color: #007ACC;
+            color: #FFFFFF;
         }
 
         button:disabled {
-            background-color: #ccc;
+            background-color: #555;
             cursor: not-allowed;
         }
 
         .status-label {
             margin: 1rem 0 0.5rem;
             font-weight: bold;
-            color: #333;
+            color: #CCCCCC;
         }
 
         .spinner {
             margin: 0.5rem auto;
             width: 30px;
             height: 30px;
-            border: 4px solid #ccc;
-            border-top: 4px solid #007bff;
+            border: 4px solid #444;
+            border-top: 4px solid #007ACC;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             display: none;
@@ -84,13 +83,8 @@
             width: 100%;
         }
 
-        h3 {
-            margin-top: 1.5rem;
-            font-size: 18px;
-        }
-
         .error {
-            color: red;
+            color: #FF6B6B;
             font-size: 14px;
             margin-top: 0.5rem;
         }
@@ -99,7 +93,7 @@
 
 <body>
     <div class="card">
-        <h2>🎤 Crystal Voice AI Demo</h2>
+        <h2>🎤 Crystal Voice AI Demo 🎤</h2>
 
         <div>
             <button id="recordBtn">Start Recording</button>
