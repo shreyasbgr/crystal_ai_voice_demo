@@ -1,21 +1,21 @@
 # 🎙️ Voice AI Demo App (Crystal AI Generalist Task)
 
-## 🌐 Try the Live App
+## 🌐 Live App
 
-You can access the deployed Voice AI assistant here:
+Live access to the deployed Voice AI assistant:
 
 🔗 [https://crystalai.shreyasbanagar.com](https://crystalai.shreyasbanagar.com)  
-🔗 [https://crystal-ai-voice-demo.fly.dev](https://crystal-ai-voice-demo.fly.dev)
+
 
 ## 📊 Airtable Logs
 
-View the log of all voice interactions here (Read-Only):
+View the logs of all voice interactions here (Read-Only):
 
 🔗 [https://airtable.com/appz2zdydPRfjnn4K/shrj3sQoryJT60hcI](https://airtable.com/appz2zdydPRfjnn4K/shrj3sQoryJT60hcI)
 
 ---
 
-## 🧠 What This App Does
+## 🧠 App Description
 
 This project is a voice-based AI assistant that:
 
@@ -29,7 +29,7 @@ Built using **FastAPI** and the **OpenAI API stack**.
 
 ---
 
-# Run the app locally
+# Running the app locally
 
 ## 🚀 Option 1: Run using local development
 
@@ -50,11 +50,7 @@ venv\Scripts\activate
 pip install -r requirements.txt
 
 # 3. Configure environment variables
-# Create a .env file using the provided .env.example and fill in:
-# - OPENAI_API_KEY
-# - AIRTABLE_API_KEY
-# - AIRTABLE_BASE_ID
-# - AIRTABLE_TABLE_NAME
+Create a .env file using the provided .env.example and fill in the required API keys
 
 # 4. Run the FastAPI app
 uvicorn main:app --reload

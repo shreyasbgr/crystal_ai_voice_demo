@@ -4,8 +4,12 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from services.audio_processor import transcribe_audio, generate_gpt_reply, text_to_speech
-from services.airtable_logger import log_to_airtable
+from services.audio_processor import (
+    transcribe_audio_async,
+    generate_gpt_reply_async,
+    text_to_speech_async
+)
+from services.airtable_logger import log_to_airtable_async
 from services.exceptions import (
     TranscriptionError,
     GPTGenerationError,
@@ -31,8 +35,9 @@ async def upload_audio(file: UploadFile = File(...)):
     tmp_path = None
     try:
         # Save uploaded audio to a temporary file
+        contents = await file.read()
         with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
-            tmp.write(await file.read())
+            tmp.write(contents)
             tmp_path = tmp.name
     except Exception as e:
         logger.exception("🛑 Failed to save uploaded audio")
@@ -40,19 +45,19 @@ async def upload_audio(file: UploadFile = File(...)):
 
     try:
         # Step 1: Transcribe audio
-        transcript = transcribe_audio(tmp_path)
+        transcript = await transcribe_audio_async(tmp_path)
         logger.info(f"🎤 Transcript: {transcript}")
 
         # Step 2: Generate GPT reply
-        reply = generate_gpt_reply(transcript)
+        reply = await generate_gpt_reply_async(transcript)
         logger.info(f"🧠 GPT Reply: {reply}")
 
         # Step 3: Log to Airtable
-        log_to_airtable(transcript=transcript, reply=reply, lang="en", source="voice-app")
+        await log_to_airtable_async(transcript=transcript, reply=reply, lang="en", source="voice-app")
         logger.info("✅ Logged to Airtable")
 
         # Step 4: Convert reply to speech
-        tts_path = text_to_speech(reply)
+        tts_path = await text_to_speech_async(reply)
         return FileResponse(tts_path, media_type="audio/mpeg", filename="response.mp3")
 
     except (TranscriptionError, GPTGenerationError, TextToSpeechError, AirtableLoggingError) as custom_error:
