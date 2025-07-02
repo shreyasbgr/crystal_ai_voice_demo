@@ -26,6 +26,9 @@ venv\Scripts\activate
 # Step 2: Install dependencies
 pip install -r requirements.txt
 
+# Create .env file based on .env.example
+Create a new .env file with the contents of .env.example and enter the API keys for OpenAI, Airtable and other Airtable related details
+
 # Step 3: Run the app
 uvicorn main:app --reload
 
