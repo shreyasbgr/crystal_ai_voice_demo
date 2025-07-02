@@ -3,18 +3,20 @@ name: Deploy to Fly.io
 on:
   push:
     branches:
-      - main  # or your default branch
+      - main
 
 jobs:
   deploy:
+    name: Deploy App
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Install Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Deploy to Fly.io
-        run: flyctl deploy --remote-only
+      - name: Deploy with Fly.io
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy -a crystal-ai-voice-demo -c fly.toml --remote-only
