@@ -7,3 +7,5 @@ requests
 httpx
 aiofiles
 gunicorn
+celery[redis]
+redis

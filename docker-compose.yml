@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7
+    container_name: voiceai-redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build:
+      context: .
+    container_name: voiceai-web
+    command: >
+      gunicorn main:app
+      --workers 2
+      --worker-class uvicorn.workers.UvicornWorker
+      --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      # Shared volume for temporary audio files
+      - shared_data:/tmp_shared_audio
+      # Shared volume for application logs
+      - shared_logs:/app/logs
+    depends_on:
+      - redis
+    env_file:
+      - .env
+
+  celery:
+    build:
+      context: .
+    container_name: voiceai-celery
+    command: celery -A tasks.worker.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+      # Mount the same shared volume for temporary audio files
+      - shared_data:/tmp_shared_audio
+      # Mount the same shared volume for application logs
+      - shared_logs:/app/logs
+    depends_on:
+      - redis
+    env_file:
+      - .env
+
+# Define the named volumes
+volumes:
+  shared_data:
+  shared_logs: # New named volume for logs

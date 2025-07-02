@@ -3,6 +3,7 @@ import datetime
 import uuid
 from config import AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME
 from services.exceptions import AirtableLoggingError
+import asyncio
 
 async def log_to_airtable_async(transcript: str, reply: str, lang: str = "auto", source: str = "voice-app") -> None:
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
@@ -33,3 +34,6 @@ async def log_to_airtable_async(transcript: str, reply: str, lang: str = "auto",
         raise AirtableLoggingError(f"Airtable API error: {str(e)}")
 
     print(f"✅ Successfully logged to Airtable with Record ID: {record_id}")
+
+def log_to_airtable_sync(transcript: str, reply: str, lang: str, source: str) -> None:
+    asyncio.run(log_to_airtable_async(transcript, reply, lang, source))
