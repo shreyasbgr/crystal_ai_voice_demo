@@ -3,24 +3,12 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Crystal Voice AI</title>
-    <!-- Devanagari Font support if required -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari&display=swap" rel="stylesheet">
-
-    <!-- Favicon for all platforms -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
-    <link rel="manifest" href="/static/icons/site.webmanifest">
-    <link rel="shortcut icon" href="/static/icons/favicon.ico">
-    <meta name="theme-color" content="#ffffff">
-    <meta name="apple-mobile-web-app-title" content="Voice AI">
-    <meta name="application-name" content="Voice AI">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crystal Voice AI Demo</title>
     <style>
         body {
-            font-family: 'Noto Sans Devanagari', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a1a; /* black-gray outer background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eaeaea;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -28,182 +16,112 @@
             margin: 0;
         }
 
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        .card {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
             width: 90%;
-            max-width: 550px;
+            max-width: 600px;
             text-align: center;
         }
 
-        h2,
-        h3 {
-            color: #333;
-            margin-bottom: 10px;
+        h2 {
+            margin-bottom: 1rem;
         }
 
-        button,
-        .file-label {
-            margin: 10px 5px;
-            padding: 10px 20px;
+        button {
+            margin: 0.5rem;
+            padding: 0.75rem 1.5rem;
             font-size: 16px;
+            border-radius: 10px;
             border: none;
+            cursor: pointer;
             background-color: #007bff;
             color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-            display: inline-block;
-        }
-
-        button:hover:not(:disabled),
-        .file-label:hover {
-            background-color: #0056b3;
         }
 
         button:disabled {
-            background-color: #a0a0a0;
+            background-color: #ccc;
             cursor: not-allowed;
         }
 
-        .file-label {
-            background-color: #28a745;
-        }
-
-        .file-label:hover {
-            background-color: #218838;
-        }
-
-        audio {
-            margin-top: 10px;
-            width: 100%;
-        }
-
-        #status {
-            margin-top: 20px;
+        .status-label {
+            margin: 1rem 0 0.5rem;
             font-weight: bold;
             color: #333;
         }
 
-        section {
-            margin-top: 25px;
-        }
-
-        #fileInput {
+        .spinner {
+            margin: 0.5rem auto;
+            width: 30px;
+            height: 30px;
+            border: 4px solid #ccc;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
             display: none;
         }
 
-        #fileNameDisplay {
-            margin: 5px;
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        audio {
+            margin-top: 0.5rem;
+            width: 100%;
+        }
+
+        h3 {
+            margin-top: 1.5rem;
+            font-size: 18px;
+        }
+
+        .sub-label {
+            color: #777;
             font-size: 14px;
-            color: #555;
-        }
-
-        .mode-switch {
-            margin: 15px 0;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        input[type="radio"] {
-            margin-right: 6px;
-        }
-
-        label {
-            cursor: pointer;
+            margin-top: 0.3rem;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h2>🎙️ Talk to the AI Assistant</h2>
+    <div class="card">
+        <h2>🎤 Crystal Voice AI Demo</h2>
 
-        <!-- Mode switch -->
-        <div class="mode-switch">
-            <label>
-                <input type="radio" name="mode" value="record" checked /> 🎤 Record Audio
-            </label>
-            &nbsp;&nbsp;
-            <label>
-                <input type="radio" name="mode" value="upload" /> 📂 Upload Audio
-            </label>
-        </div>
-
-        <!-- Recording buttons -->
-        <div id="recordSection">
+        <div>
             <button id="recordBtn">Start Recording</button>
-            <button id="stopBtn" disabled>Stop</button>
+            <button id="stopBtn" disabled>Stop Recording</button>
         </div>
 
-        <!-- File upload buttons -->
-        <div id="uploadSection" class="hidden">
-            <label for="fileInput" class="file-label">Choose Audio File</label>
-            <input type="file" id="fileInput" accept="audio/*" />
-            <p id="fileNameDisplay"></p>
-        </div>
+        <!-- Recording Status -->
+        <div class="status-label" id="status">Click "Start Recording" to begin</div>
 
-        <!-- Send button -->
-        <button id="uploadBtn" disabled>Send to AI</button>
+        <!-- User Audio Preview -->
+        <h3>Your Audio Recording</h3>
+        <audio id="previewAudio" controls></audio>
 
-        <!-- Preview section -->
-        <section>
-            <h3>🎧 Preview</h3>
-            <audio id="audioPreview" controls></audio>
-        </section>
-
-        <!-- Response section -->
-        <section>
-            <h3>🤖 AI Response</h3>
-            <audio id="audioReply" controls></audio>
-        </section>
-
-        <p id="status"></p>
+        <!-- AI Processing Spinner + Status -->
+        <div class="spinner" id="loader"></div>
+        <div class="status-label" id="aiStatus"></div>
+        <h3>AI Response</h3>   
+        <audio id="aiAudio" controls autoplay></audio>
     </div>
 
     <script>
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioBlob = null;
-
         const recordBtn = document.getElementById("recordBtn");
         const stopBtn = document.getElementById("stopBtn");
-        const uploadBtn = document.getElementById("uploadBtn");
-        const fileInput = document.getElementById("fileInput");
-        const fileNameDisplay = document.getElementById("fileNameDisplay");
+        const previewAudio = document.getElementById("previewAudio");
+        const aiAudio = document.getElementById("aiAudio");
         const statusText = document.getElementById("status");
-        const audioPreview = document.getElementById("audioPreview");
-        const audioReply = document.getElementById("audioReply");
-        const recordSection = document.getElementById("recordSection");
-        const uploadSection = document.getElementById("uploadSection");
+        const aiStatusText = document.getElementById("aiStatus");
+        const loader = document.getElementById("loader");
 
-        // Mode switch
-        document.querySelectorAll('input[name="mode"]').forEach((radio) => {
-            radio.addEventListener("change", (e) => {
-                const mode = e.target.value;
-                if (mode === "record") {
-                    recordSection.classList.remove("hidden");
-                    uploadSection.classList.add("hidden");
-                    fileInput.value = "";
-                    fileNameDisplay.textContent = "";
-                    audioPreview.src = "";
-                    audioBlob = null;
-                    uploadBtn.disabled = true;
-                } else {
-                    recordSection.classList.add("hidden");
-                    uploadSection.classList.remove("hidden");
-                    audioPreview.src = "";
-                    audioBlob = null;
-                    uploadBtn.disabled = true;
-                }
-            });
-        });
+        let mediaRecorder;
+        let audioChunks = [];
 
-        // 🎤 Recording
         recordBtn.onclick = async () => {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
@@ -213,65 +131,45 @@
                 audioChunks.push(e.data);
             };
 
-            mediaRecorder.onstop = () => {
-                audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
                 const audioUrl = URL.createObjectURL(audioBlob);
-                audioPreview.src = audioUrl;
-                fileInput.value = "";
-                fileNameDisplay.textContent = "";
-                uploadBtn.disabled = false;
-                statusText.textContent = "🎧 Preview your recording and send to AI when ready.";
+                previewAudio.src = audioUrl;
+
+                aiStatusText.textContent = "⏳ Sending to AI...";
+                loader.style.display = "block";
+
+                const formData = new FormData();
+                formData.append("file", audioBlob, "input.webm");
+
+                const response = await fetch("/upload-audio", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                loader.style.display = "none";
+
+                if (response.ok) {
+                    const aiBlob = await response.blob();
+                    const aiUrl = URL.createObjectURL(aiBlob);
+                    aiAudio.src = aiUrl;
+                    aiAudio.play();
+                    aiStatusText.textContent = "✅ AI responded!";
+                } else {
+                    aiStatusText.textContent = "❌ Error from AI";
+                }
             };
 
             mediaRecorder.start();
+            statusText.textContent = "🎙️ Recording... Click 'Stop Recording' to finish.";
             recordBtn.disabled = true;
             stopBtn.disabled = false;
-            uploadBtn.disabled = true;
-            statusText.textContent = "🎙️ Recording...";
         };
 
         stopBtn.onclick = () => {
             mediaRecorder.stop();
             recordBtn.disabled = false;
             stopBtn.disabled = true;
-            statusText.textContent = "⏹️ Recording stopped.";
-        };
-
-        // 📂 File upload
-        fileInput.onchange = () => {
-            const file = fileInput.files[0];
-            if (file) {
-                audioBlob = file;
-                const audioUrl = URL.createObjectURL(file);
-                audioPreview.src = audioUrl;
-                fileNameDisplay.textContent = `✅ Selected: ${file.name}`;
-                uploadBtn.disabled = false;
-                statusText.textContent = "📂 File loaded. Click 'Send to AI'.";
-            }
-        };
-
-        // ⬆️ Upload to backend
-        uploadBtn.onclick = async () => {
-            if (!audioBlob) return;
-            statusText.textContent = "⏳ Sending to AI...";
-            uploadBtn.disabled = true;
-
-            const formData = new FormData();
-            formData.append("file", audioBlob, audioBlob.name || "input.webm");
-
-            const response = await fetch("/upload-audio", {
-                method: "POST",
-                body: formData,
-            });
-
-            if (response.ok) {
-                const audioFile = await response.blob();
-                const audioUrl = URL.createObjectURL(audioFile);
-                audioReply.src = audioUrl;
-                statusText.textContent = "✅ AI responded!";
-            } else {
-                statusText.textContent = "❌ Error processing audio.";
-            }
         };
     </script>
 </body>
