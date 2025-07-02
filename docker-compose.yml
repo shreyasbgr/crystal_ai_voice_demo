@@ -5,47 +5,46 @@ services:
     image: redis:7
     container_name: voiceai-redis
     ports:
-      - "6379:6379"
+      - "6379:6379" # Map Redis port to host for local access (optional, but useful for debugging)
+    # Volumes for Redis persistence (optional for dev, recommended for production)
+    # - redis_data:/data # Uncomment and define redis_data volume below for persistence
 
   web:
     build:
-      context: .
+      context: . # Build from the current directory where Dockerfile is located
     container_name: voiceai-web
     command: >
       gunicorn main:app
       --workers 2
       --worker-class uvicorn.workers.UvicornWorker
-      --bind 0.0.0.0:8000
+      --bind 0.0.0.0:8000 # FastAPI/Gunicorn listens on port 8000 inside the container
     ports:
-      - "8000:8000"
+      - "8000:8000" # Map container port 8000 to host port 8000
     volumes:
-      - .:/app
-      # Shared volume for temporary audio files
-      - shared_data:/tmp_shared_audio
-      # Shared volume for application logs
-      - shared_logs:/app/logs
+      - .:/app # Mount the current project directory into the container
+      - shared_audio_data:/tmp_shared_audio # Shared volume for temporary audio files
+      - shared_logs_data:/app/logs # Shared volume for application logs
     depends_on:
-      - redis
+      - redis # Ensure Redis starts before the web service
     env_file:
-      - .env
+      - .env # Load environment variables from .env file
 
   celery:
     build:
-      context: .
+      context: . # Build from the current directory where Dockerfile is located
     container_name: voiceai-celery
-    command: celery -A tasks.worker.celery_app worker --loglevel=info
+    command: celery -A tasks.worker.celery_app worker --loglevel=info # Command to start the Celery worker
     volumes:
-      - .:/app
-      # Mount the same shared volume for temporary audio files
-      - shared_data:/tmp_shared_audio
-      # Mount the same shared volume for application logs
-      - shared_logs:/app/logs
+      - .:/app # Mount the current project directory into the container
+      - shared_audio_data:/tmp_shared_audio # Mount the same shared volume for audio
+      - shared_logs_data:/app/logs # Mount the same shared volume for logs
     depends_on:
-      - redis
+      - redis # Ensure Redis starts before the Celery worker
     env_file:
-      - .env
+      - .env # Load environment variables from .env file
 
-# Define the named volumes
+# Define named volumes for shared data
 volumes:
-  shared_data:
-  shared_logs: # New named volume for logs
+  shared_audio_data:
+  shared_logs_data:
+  # redis_data: # Uncomment this if you want Redis data persistence

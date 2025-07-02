@@ -90,7 +90,7 @@
 
         // Function to reset UI to initial state
         function resetUI() {
-            console.log("resetUI: Resetting UI to initial state.");
+            // console.log("resetUI: Resetting UI to initial state."); // Debugging log
             recordBtn.disabled = false;
             stopBtn.disabled = true;
             statusText.textContent = "Click 'Start Recording' to begin";
@@ -100,25 +100,25 @@
             previewAudio.src = ""; // Clear preview audio
             aiAudio.src = ""; // Clear AI audio
             if (pollingIntervalId) {
-                console.log("resetUI: Clearing existing polling interval.");
+                // console.log("resetUI: Clearing existing polling interval."); // Debugging log
                 clearInterval(pollingIntervalId);
                 pollingIntervalId = null; // Clear the ID
             }
             // Stop all tracks in the stream to release microphone
             if (audioStream) {
-                console.log("resetUI: Stopping audio stream tracks.");
+                // console.log("resetUI: Stopping audio stream tracks."); // Debugging log
                 audioStream.getTracks().forEach(track => track.stop());
                 audioStream = null; // Clear the stream reference
             }
-            console.log("resetUI: UI reset complete. recordBtn.disabled:", recordBtn.disabled);
+            // console.log("resetUI: UI reset complete. recordBtn.disabled:", recordBtn.disabled); // Debugging log
         }
 
         // Function to start polling for task result
         async function pollTaskResult(taskId) {
-            console.log(`pollTaskResult: Starting polling for task ID: ${taskId}`);
+            // console.log(`pollTaskResult: Starting polling for task ID: ${taskId}`); // Debugging log
             let attempts = 0;
             const maxAttempts = 60; // Poll for up to 60 seconds (1 second interval)
-            const pollInterval = 1000; // 1 second
+            const pollInterval = 2000; // Changed to 2 seconds for optimization
 
             // Clear any existing polling interval before starting a new one
             if (pollingIntervalId) {
@@ -127,9 +127,9 @@
 
             pollingIntervalId = setInterval(async () => {
                 attempts++;
-                console.log(`pollTaskResult: Polling attempt ${attempts} for task ID: ${taskId}`);
+                // console.log(`pollTaskResult: Polling attempt ${attempts} for task ID: ${taskId}`); // Debugging log
                 if (attempts > maxAttempts) {
-                    console.error("pollTaskResult: Polling timed out.");
+                    // console.error("pollTaskResult: Polling timed out."); // Debugging log
                     clearInterval(pollingIntervalId);
                     loader.style.display = "none";
                     aiStatusText.textContent = "";
@@ -142,9 +142,9 @@
                     const response = await fetch(`/get-audio-response/${taskId}`);
                     if (response.ok) {
                         const contentType = response.headers.get("content-type");
-                        console.log(`pollTaskResult: Response Content-Type: ${contentType}`);
+                        // console.log(`pollTaskResult: Response Content-Type: ${contentType}`); // Debugging log
                         if (contentType && contentType.includes("audio/mpeg")) { // Check for audio content type
-                            console.log("pollTaskResult: Audio response received.");
+                            // console.log("pollTaskResult: Audio response received."); // Debugging log
                             clearInterval(pollingIntervalId); // Stop polling
                             loader.style.display = "none"; // Hide spinner
 
@@ -154,12 +154,12 @@
 
                             // Attempt to play the audio. Handle autoplay policy.
                             aiAudio.play().then(() => {
-                                console.log("aiAudio: Playback started successfully.");
+                                // console.log("aiAudio: Playback started successfully."); // Debugging log
                                 aiStatusText.textContent = "✅ AI responded!";
                                 errorStatus.textContent = ""; // Clear any previous errors
                                 // Reset UI only after audio has finished playing
                             }).catch(e => {
-                                console.error("aiAudio: Playback failed:", e);
+                                // console.error("aiAudio: Playback failed:", e); // Debugging log
                                 if (e.name === 'NotAllowedError' || e.name === 'AbortError') {
                                     errorStatus.textContent = "❌ Autoplay blocked. Please click play on the AI Audio player.";
                                     aiStatusText.textContent = "✅ AI responded (click play below)!";
@@ -172,22 +172,22 @@
                         } else {
                             // Still processing, or other JSON status
                             const data = await response.json();
-                            console.log(`pollTaskResult: Task status: ${data.status}`);
+                            // console.log(`pollTaskResult: Task status: ${data.status}`); // Debugging log
                             aiStatusText.textContent = `⏳ AI status: ${data.status || 'Processing...'}`;
                         }
                     } else {
                         // Handle HTTP errors from the polling endpoint
-                        console.error(`pollTaskResult: HTTP error ${response.status} - ${response.statusText}`);
+                        // console.error(`pollTaskResult: HTTP error ${response.status} - ${response.statusText}`); // Debugging log
                         clearInterval(pollingIntervalId); // Stop polling on error
                         loader.style.display = "none";
                         aiStatusText.textContent = "";
                         const errorData = await response.json();
                         errorStatus.textContent = "❌ " + (errorData.detail || errorData.error || "Failed to get AI response.");
-                        console.error("Polling error:", errorData);
+                        // console.error("Polling error:", errorData); // Debugging log
                         resetUI(); // Reset UI on polling error
                     }
                 } catch (err) {
-                    console.error("pollTaskResult: Network error during polling:", err);
+                    // console.error("pollTaskResult: Network error during polling:", err); // Debugging log
                     clearInterval(pollingIntervalId); // Stop polling on network error
                     loader.style.display = "none";
                     aiStatusText.textContent = "";
@@ -198,33 +198,33 @@
         }
 
         recordBtn.onclick = async () => {
-            console.log("recordBtn.onclick: Start Recording button clicked.");
+            // console.log("recordBtn.onclick: Start Recording button clicked."); // Debugging log
             resetUI(); // Always reset UI at the start of a new recording attempt
 
             try {
                 // Request microphone access
                 audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                console.log("recordBtn.onclick: Microphone access granted.");
+                // console.log("recordBtn.onclick: Microphone access granted."); // Debugging log
                 mediaRecorder = new MediaRecorder(audioStream); // Use the stored stream
 
                 audioChunks = [];
 
                 mediaRecorder.ondataavailable = (e) => {
-                    console.log(`mediaRecorder.ondataavailable: Data available, size: ${e.data.size}`);
+                    // console.log(`mediaRecorder.ondataavailable: Data available, size: ${e.data.size}`); // Debugging log
                     audioChunks.push(e.data);
                 };
 
                 mediaRecorder.onstop = async () => {
-                    console.log("mediaRecorder.onstop: Recording stopped.");
+                    // console.log("mediaRecorder.onstop: Recording stopped."); // Debugging log
                     statusText.textContent = "Recording stopped. Sending to AI...";
                     recordBtn.disabled = true; // Keep disabled while sending/processing
                     stopBtn.disabled = true;
-                    console.log("mediaRecorder.onstop: Buttons disabled for processing. recordBtn.disabled:", recordBtn.disabled);
+                    // console.log("mediaRecorder.onstop: Buttons disabled for processing. recordBtn.disabled:", recordBtn.disabled); // Debugging log
 
 
                     // Stop the microphone stream after recording is done
                     if (audioStream) {
-                        console.log("mediaRecorder.onstop: Stopping audio stream tracks.");
+                        // console.log("mediaRecorder.onstop: Stopping audio stream tracks."); // Debugging log
                         audioStream.getTracks().forEach(track => track.stop());
                         audioStream = null; // Clear the stream reference
                     }
@@ -233,7 +233,7 @@
                         const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
                         const audioUrl = URL.createObjectURL(audioBlob);
                         previewAudio.src = audioUrl;
-                        console.log(`mediaRecorder.onstop: Preview audio URL created: ${audioUrl}`);
+                        // console.log(`mediaRecorder.onstop: Preview audio URL created: ${audioUrl}`); // Debugging log
 
                         aiStatusText.textContent = "⏳ Sending to AI...";
                         loader.style.display = "block";
@@ -245,23 +245,23 @@
                             method: "POST",
                             body: formData,
                         });
-                        console.log(`mediaRecorder.onstop: Upload audio response status: ${response.status}`);
+                        // console.log(`mediaRecorder.onstop: Upload audio response status: ${response.status}`); // Debugging log
 
                         if (response.ok) {
                             const data = await response.json();
-                            console.log(`mediaRecorder.onstop: Upload audio response data:`, data);
+                            // console.log(`mediaRecorder.onstop: Upload audio response data:`, data); // Debugging log
                             if (data.task_id) {
                                 aiStatusText.textContent = "⏳ Task dispatched. Waiting for AI response...";
                                 pollTaskResult(data.task_id); // Start polling for the result
                             } else {
-                                console.error("mediaRecorder.onstop: No task ID received from server.");
+                                // console.error("mediaRecorder.onstop: No task ID received from server."); // Debugging log
                                 loader.style.display = "none";
                                 aiStatusText.textContent = "";
                                 errorStatus.textContent = "❌ No task ID received from server.";
                                 resetUI(); // Reset UI if no task ID
                             }
                         } else {
-                            console.error("mediaRecorder.onstop: Failed to dispatch task.");
+                            // console.error("mediaRecorder.onstop: Failed to dispatch task."); // Debugging log
                             loader.style.display = "none";
                             aiStatusText.textContent = "";
                             const errorData = await response.json();
@@ -269,7 +269,7 @@
                             resetUI(); // Reset UI on dispatch failure
                         }
                     } catch (err) {
-                        console.error("mediaRecorder.onstop: Unexpected error during upload:", err);
+                        // console.error("mediaRecorder.onstop: Unexpected error during upload:", err); // Debugging log
                         loader.style.display = "none";
                         aiStatusText.textContent = "";
                         errorStatus.textContent = "❌ Unexpected error occurred during upload. Check console.";
@@ -278,39 +278,39 @@
                 };
 
                 mediaRecorder.start();
-                console.log("mediaRecorder.start: Recording started. MediaRecorder state:", mediaRecorder.state);
+                // console.log("mediaRecorder.start: Recording started. MediaRecorder state:", mediaRecorder.state); // Debugging log
                 statusText.textContent = "🎙️ Recording... Click 'Stop Recording' to finish.";
                 recordBtn.disabled = true; // Disable record immediately when starting
                 stopBtn.disabled = false; // Enable stop immediately when starting
-                console.log("recordBtn.onclick: Buttons state set. recordBtn.disabled:", recordBtn.disabled, "stopBtn.disabled:", stopBtn.disabled);
+                // console.log("recordBtn.onclick: Buttons state set. recordBtn.disabled:", recordBtn.disabled, "stopBtn.disabled:", stopBtn.disabled); // Debugging log
 
             } catch (err) {
-                console.error("recordBtn.onclick: Could not start recording:", err);
+                // console.error("recordBtn.onclick: Could not start recording:", err); // Debugging log
                 errorStatus.textContent = "❌ Could not start recording. Check microphone permissions.";
                 resetUI(); // Reset UI on recording start failure
             }
         };
 
         stopBtn.onclick = () => {
-            console.log("stopBtn.onclick: Stop Recording button clicked.");
+            // console.log("stopBtn.onclick: Stop Recording button clicked."); // Debugging log
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
-                console.log("stopBtn.onclick: MediaRecorder stopped. State after stop:", mediaRecorder.state);
+                // console.log("stopBtn.onclick: MediaRecorder stopped. State after stop:", mediaRecorder.state); // Debugging log
             } else {
-                console.warn("stopBtn.onclick: MediaRecorder not active or not initialized. State:", mediaRecorder ? mediaRecorder.state : 'undefined');
+                // console.warn("stopBtn.onclick: MediaRecorder not active or not initialized. State:", mediaRecorder ? mediaRecorder.state : 'undefined'); // Debugging log
             }
             // Buttons will be re-enabled by mediaRecorder.onstop after processing,
             // or by pollTaskResult on success/failure/timeout.
             // For now, keep them disabled to prevent re-recording during processing.
             recordBtn.disabled = true;
             stopBtn.disabled = true;
-            console.log("stopBtn.onclick: Buttons disabled for stopping. recordBtn.disabled:", recordBtn.disabled, "stopBtn.disabled:", stopBtn.disabled);
+            // console.log("stopBtn.onclick: Buttons disabled for stopping. recordBtn.disabled:", recordBtn.disabled, "stopBtn.disabled:", stopBtn.disabled); // Debugging log
             statusText.textContent = "Stopping recording..."; // Update status immediately
         };
 
         // Add event listener for when the AI audio finishes playing
         aiAudio.onended = () => {
-            console.log("aiAudio.onended: AI audio playback finished.");
+            // console.log("aiAudio.onended: AI audio playback finished."); // Debugging log
             // Reset UI only if it's not already in a recording state
             // Check if polling has stopped and no active recording
             if (!pollingIntervalId && (!mediaRecorder || mediaRecorder.state === 'inactive')) {
