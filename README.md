@@ -34,3 +34,13 @@ uvicorn main:app --reload
 
 # Open your browser
 http://localhost:8000
+```
+
+## 🚀 How to Run (Docker Container)
+```bash
+# Build the Docker image
+docker build -t voice-ai-app .
+
+# Run the app with your .env file
+docker run --env-file .env -p 8000:8000 voice-ai-app
+```
