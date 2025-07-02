@@ -5,10 +5,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Crystal Voice AI Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari&display=swap" rel="stylesheet">
+    <!-- Favicon for all platforms -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
+    <link rel="manifest" href="/static/icons/site.webmanifest">
+    <link rel="shortcut icon" href="/static/icons/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-title" content="Voice AI">
+    <meta name="application-name" content="Voice AI">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #eaeaea;
+            background-color: #f4f4f4;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -17,10 +27,10 @@
         }
 
         .card {
-            background: #fff;
+            background: white;
             padding: 2rem;
             border-radius: 16px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             width: 90%;
             max-width: 600px;
             text-align: center;
@@ -79,10 +89,10 @@
             font-size: 18px;
         }
 
-        .sub-label {
-            color: #777;
+        .error {
+            color: red;
             font-size: 14px;
-            margin-top: 0.3rem;
+            margin-top: 0.5rem;
         }
     </style>
 </head>
@@ -96,17 +106,16 @@
             <button id="stopBtn" disabled>Stop Recording</button>
         </div>
 
-        <!-- Recording Status -->
         <div class="status-label" id="status">Click "Start Recording" to begin</div>
 
-        <!-- User Audio Preview -->
         <h3>Your Audio Recording</h3>
         <audio id="previewAudio" controls></audio>
 
-        <!-- AI Processing Spinner + Status -->
         <div class="spinner" id="loader"></div>
         <div class="status-label" id="aiStatus"></div>
-        <h3>AI Response</h3>   
+        <div class="error" id="errorStatus"></div>
+
+        <h3>AI Response</h3>
         <audio id="aiAudio" controls autoplay></audio>
     </div>
 
@@ -117,53 +126,69 @@
         const aiAudio = document.getElementById("aiAudio");
         const statusText = document.getElementById("status");
         const aiStatusText = document.getElementById("aiStatus");
+        const errorStatus = document.getElementById("errorStatus");
         const loader = document.getElementById("loader");
 
         let mediaRecorder;
         let audioChunks = [];
 
         recordBtn.onclick = async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
 
-            mediaRecorder.ondataavailable = (e) => {
-                audioChunks.push(e.data);
-            };
+                mediaRecorder.ondataavailable = (e) => {
+                    audioChunks.push(e.data);
+                };
 
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                previewAudio.src = audioUrl;
+                mediaRecorder.onstop = async () => {
+                    try {
+                        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        previewAudio.src = audioUrl;
 
-                aiStatusText.textContent = "⏳ Sending to AI...";
-                loader.style.display = "block";
+                        aiStatusText.textContent = "⏳ Sending to AI...";
+                        errorStatus.textContent = "";
+                        loader.style.display = "block";
 
-                const formData = new FormData();
-                formData.append("file", audioBlob, "input.webm");
+                        const formData = new FormData();
+                        formData.append("file", audioBlob, "input.webm");
 
-                const response = await fetch("/upload-audio", {
-                    method: "POST",
-                    body: formData,
-                });
+                        const response = await fetch("/upload-audio", {
+                            method: "POST",
+                            body: formData,
+                        });
 
-                loader.style.display = "none";
+                        loader.style.display = "none";
 
-                if (response.ok) {
-                    const aiBlob = await response.blob();
-                    const aiUrl = URL.createObjectURL(aiBlob);
-                    aiAudio.src = aiUrl;
-                    aiAudio.play();
-                    aiStatusText.textContent = "✅ AI responded!";
-                } else {
-                    aiStatusText.textContent = "❌ Error from AI";
-                }
-            };
+                        if (response.ok) {
+                            const aiBlob = await response.blob();
+                            const aiUrl = URL.createObjectURL(aiBlob);
+                            aiAudio.src = aiUrl;
+                            aiAudio.play();
+                            aiStatusText.textContent = "✅ AI responded!";
+                        } else {
+                            const errorData = await response.json();
+                            errorStatus.textContent = "❌ " + (errorData.error || "AI failed to respond");
+                            aiStatusText.textContent = "";
+                        }
+                    } catch (err) {
+                        loader.style.display = "none";
+                        aiStatusText.textContent = "";
+                        errorStatus.textContent = "❌ Unexpected error occurred. Check console.";
+                        console.error("Upload/AI error:", err);
+                    }
+                };
 
-            mediaRecorder.start();
-            statusText.textContent = "🎙️ Recording... Click 'Stop Recording' to finish.";
-            recordBtn.disabled = true;
-            stopBtn.disabled = false;
+                mediaRecorder.start();
+                statusText.textContent = "🎙️ Recording... Click 'Stop Recording' to finish.";
+                recordBtn.disabled = true;
+                stopBtn.disabled = false;
+            } catch (err) {
+                errorStatus.textContent = "❌ Could not start recording. Check microphone permissions.";
+                console.error("Recording error:", err);
+            }
         };
 
         stopBtn.onclick = () => {
