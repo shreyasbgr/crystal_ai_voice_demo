@@ -4,7 +4,7 @@ import httpx
 import aiofiles
 from dotenv import load_dotenv
 from services.exceptions import TranscriptionError, GPTGenerationError, TextToSpeechError
-from utils.retry_config import get_default_retry_config, get_default_timeout_config
+from utils.retry_config import get_default_retry_config, get_default_timeout_config, retry_async_request
 
 load_dotenv()
 
@@ -22,10 +22,9 @@ OPENAI_BASE_URL = "https://api.openai.com/v1"
 
 # --- Async Transcription ---
 async def transcribe_audio_async(audio_path: str) -> str:
-    try:
-        retries = get_default_retry_config()
+    async def _make_request():
         timeout = get_default_timeout_config()
-        async with httpx.AsyncClient(timeout=timeout, retries=retries) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             with open(audio_path, "rb") as audio_file:
                 files = {"file": (os.path.basename(audio_path), audio_file, "audio/webm")}
                 data = {
@@ -38,17 +37,20 @@ async def transcribe_audio_async(audio_path: str) -> str:
                     data=data,
                     files=files
                 )
-        response.raise_for_status()
-        return response.text.strip()
+                response.raise_for_status()
+                return response.text.strip()
+    
+    try:
+        retry_config = get_default_retry_config()
+        return await retry_async_request(_make_request, retry_config)
     except Exception as e:
         raise TranscriptionError(f"Error during transcription: {e}")
 
 # --- Async GPT Response ---
 async def generate_gpt_reply_async(transcript: str) -> str:
-    try:
-        retries = get_default_retry_config()
+    async def _make_request():
         timeout = get_default_timeout_config()
-        async with httpx.AsyncClient(timeout=timeout, retries=retries) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             payload = {
                 "model": GPT_MODEL,
                 "messages": [
@@ -61,18 +63,21 @@ async def generate_gpt_reply_async(transcript: str) -> str:
                 headers={**HEADERS, "Content-Type": "application/json"},
                 json=payload
             )
-        response.raise_for_status()
-        content = response.json()
-        return content["choices"][0]["message"]["content"].strip()
+            response.raise_for_status()
+            content = response.json()
+            return content["choices"][0]["message"]["content"].strip()
+    
+    try:
+        retry_config = get_default_retry_config()
+        return await retry_async_request(_make_request, retry_config)
     except Exception as e:
         raise GPTGenerationError(f"Error during GPT chat completion: {e}")
 
 # --- Async Text-to-Speech ---
 async def text_to_speech_async(text: str) -> str:
-    try:
-        retries = get_default_retry_config()
+    async def _make_request():
         timeout = get_default_timeout_config()
-        async with httpx.AsyncClient(timeout=timeout, retries=retries) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             payload = {
                 "model": TTS_MODEL,
                 "voice": TTS_VOICE,
@@ -83,10 +88,14 @@ async def text_to_speech_async(text: str) -> str:
                 headers={**HEADERS, "Content-Type": "application/json"},
                 json=payload
             )
-        response.raise_for_status()
-        tts_path = tempfile.mktemp(suffix=".mp3")
-        async with aiofiles.open(tts_path, "wb") as out_file:
-            await out_file.write(response.content)
-        return tts_path
+            response.raise_for_status()
+            tts_path = tempfile.mktemp(suffix=".mp3")
+            async with aiofiles.open(tts_path, "wb") as out_file:
+                await out_file.write(response.content)
+            return tts_path
+    
+    try:
+        retry_config = get_default_retry_config()
+        return await retry_async_request(_make_request, retry_config)
     except Exception as e:
         raise TextToSpeechError(f"Error during text-to-speech generation: {e}")
