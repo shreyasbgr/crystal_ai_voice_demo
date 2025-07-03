@@ -36,21 +36,16 @@ async def retry_async_request(func: Callable, retry_config: RetryConfig, *args, 
     for attempt in range(retry_config.max_retries + 1):
         try:
             return await func(*args, **kwargs)
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code in retry_config.retry_status_codes:
-                last_exception = e
-                if attempt < retry_config.max_retries:
-                    wait_time = retry_config.backoff_factor * (2 ** attempt)
-                    await asyncio.sleep(wait_time)
-                    continue
-            raise e
-        except (httpx.RequestError, httpx.TimeoutException) as e:
+        except (httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException) as e:
             last_exception = e
+            if isinstance(e, httpx.HTTPStatusError) and e.response.status_code not in retry_config.retry_status_codes:
+                raise
+
             if attempt < retry_config.max_retries:
                 wait_time = retry_config.backoff_factor * (2 ** attempt)
                 await asyncio.sleep(wait_time)
-                continue
-            raise e
+            else:
+                raise
     
     # If we get here, all retries were exhausted
     raise last_exception

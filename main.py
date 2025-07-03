@@ -1,5 +1,9 @@
 import os
 import tempfile
+import os
+import tempfile
+import httpx
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -19,7 +23,17 @@ from services.exceptions import (
 from utils.logger import setup_logger
 
 logger = setup_logger()
-app = FastAPI()
+
+# Define a lifespan manager for the application
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize the HTTPX client on startup
+    app.state.httpx_client = httpx.AsyncClient()
+    yield
+    # Close the HTTPX client on shutdown
+    await app.state.httpx_client.aclose()
+
+app = FastAPI(lifespan=lifespan)
 
 # Serve static files (HTML, favicon, icons)
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -31,33 +45,29 @@ async def serve_index():
 
 
 @app.post("/upload-audio")
-async def upload_audio(file: UploadFile = File(...)):
-    tmp_path = None
+async def upload_audio(request: Request, file: UploadFile = File(...)):
+    client = request.app.state.httpx_client
     try:
         # Save uploaded audio to a temporary file
         contents = await file.read()
         with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
             tmp.write(contents)
             tmp_path = tmp.name
-    except Exception as e:
-        logger.exception("🛑 Failed to save uploaded audio")
-        raise HTTPException(status_code=400, detail="Failed to save uploaded audio")
 
-    try:
         # Step 1: Transcribe audio
-        transcript = await transcribe_audio_async(tmp_path)
+        transcript = await transcribe_audio_async(tmp_path, client)
         logger.info(f"🎤 Transcript: {transcript}")
 
         # Step 2: Generate GPT reply
-        reply = await generate_gpt_reply_async(transcript)
+        reply = await generate_gpt_reply_async(transcript, client)
         logger.info(f"🧠 GPT Reply: {reply}")
 
         # Step 3: Log to Airtable
-        await log_to_airtable_async(transcript=transcript, reply=reply, lang="en", source="voice-app")
+        await log_to_airtable_async(transcript=transcript, reply=reply, lang="en", source="voice-app", client=client)
         logger.info("✅ Logged to Airtable")
 
         # Step 4: Convert reply to speech
-        tts_path = await text_to_speech_async(reply)
+        tts_path = await text_to_speech_async(reply, client)
         return FileResponse(tts_path, media_type="audio/mpeg", filename="response.mp3")
 
     except (TranscriptionError, GPTGenerationError, TextToSpeechError, AirtableLoggingError) as custom_error:
