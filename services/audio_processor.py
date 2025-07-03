@@ -4,6 +4,7 @@ import httpx
 import aiofiles
 from dotenv import load_dotenv
 from services.exceptions import TranscriptionError, GPTGenerationError, TextToSpeechError
+from utils.retry_config import get_default_retry_config, get_default_timeout_config
 
 load_dotenv()
 
@@ -22,7 +23,9 @@ OPENAI_BASE_URL = "https://api.openai.com/v1"
 # --- Async Transcription ---
 async def transcribe_audio_async(audio_path: str) -> str:
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        retries = get_default_retry_config()
+        timeout = get_default_timeout_config()
+        async with httpx.AsyncClient(timeout=timeout, retries=retries) as client:
             with open(audio_path, "rb") as audio_file:
                 files = {"file": (os.path.basename(audio_path), audio_file, "audio/webm")}
                 data = {
@@ -43,7 +46,9 @@ async def transcribe_audio_async(audio_path: str) -> str:
 # --- Async GPT Response ---
 async def generate_gpt_reply_async(transcript: str) -> str:
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        retries = get_default_retry_config()
+        timeout = get_default_timeout_config()
+        async with httpx.AsyncClient(timeout=timeout, retries=retries) as client:
             payload = {
                 "model": GPT_MODEL,
                 "messages": [
@@ -65,7 +70,9 @@ async def generate_gpt_reply_async(transcript: str) -> str:
 # --- Async Text-to-Speech ---
 async def text_to_speech_async(text: str) -> str:
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        retries = get_default_retry_config()
+        timeout = get_default_timeout_config()
+        async with httpx.AsyncClient(timeout=timeout, retries=retries) as client:
             payload = {
                 "model": TTS_MODEL,
                 "voice": TTS_VOICE,
