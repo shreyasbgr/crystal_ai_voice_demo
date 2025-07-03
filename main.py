@@ -45,7 +45,7 @@ async def serve_index():
 
 
 @app.post("/upload-audio")
-as def upload_audio(request: Request, file: UploadFile = File(...)):
+async def upload_audio(request: Request, file: UploadFile = File(...)):
     client = request.app.state.httpx_client
     try:
         # Save uploaded audio to a temporary file
