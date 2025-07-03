@@ -3,6 +3,7 @@ import datetime
 import uuid
 from config import AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_NAME
 from services.exceptions import AirtableLoggingError
+from utils.retry_config import get_default_retry_config, get_airtable_timeout_config, retry_async_request
 
 async def log_to_airtable_async(transcript: str, reply: str, lang: str = "auto", source: str = "voice-app") -> None:
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}"
@@ -23,10 +24,16 @@ async def log_to_airtable_async(transcript: str, reply: str, lang: str = "auto",
         }
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
+    async def _make_request():
+        timeout = get_airtable_timeout_config()
+        async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(url, headers=headers, json=payload)
             response.raise_for_status()
+            return response
+    
+    try:
+        retry_config = get_default_retry_config()
+        await retry_async_request(_make_request, retry_config)
     except httpx.RequestError as e:
         raise AirtableLoggingError(f"Network error during Airtable logging: {str(e)}")
     except httpx.HTTPStatusError as e:
